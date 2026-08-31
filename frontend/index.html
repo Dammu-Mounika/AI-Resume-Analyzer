@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer & Job Matcher</title>
+    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="page">
+        <header class="header">
+            <div class="header-content">
+                <h1>AI Resume Analyzer & Job Matcher</h1>
+                <p class="subtitle">
+                    Analyze your resume against a specific job description and identify opportunities to improve your match.
+                </p>
+            </div>
+        </header>
+
+        <main class="main">
+            <form id="analyze-form" class="analyze-form" novalidate>
+                <!-- Resume Upload -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Resume Upload</h2>
+                        <p>Upload your resume as a PDF file (max 5 MB).</p>
+                    </div>
+
+                    <div class="upload-area" id="upload-area">
+                        <input
+                            type="file"
+                            id="resume-input"
+                            name="resume"
+                            accept=".pdf,application/pdf"
+                            hidden
+                        >
+                        <div class="upload-placeholder" id="upload-placeholder">
+                            <div class="upload-icon" aria-hidden="true">📄</div>
+                            <p class="upload-title">Drag & drop your resume here</p>
+                            <p class="upload-hint">or</p>
+                            <button type="button" class="btn btn-secondary" id="browse-btn">
+                                Browse PDF
+                            </button>
+                        </div>
+                        <div class="upload-selected hidden" id="upload-selected">
+                            <div class="file-info">
+                                <span class="file-icon" aria-hidden="true">✓</span>
+                                <div>
+                                    <p class="file-name" id="file-name"></p>
+                                    <p class="file-size" id="file-size"></p>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-text" id="remove-file-btn">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                    <p class="field-error hidden" id="resume-error"></p>
+                </section>
+
+                <!-- Job Description -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>Job Description</h2>
+                        <p>Paste the full job description you are applying for. Skills and keywords are detected automatically.</p>
+                    </div>
+
+                    <div class="textarea-wrapper">
+                        <textarea
+                            id="job-description"
+                            name="job_description"
+                            rows="12"
+                            placeholder="Example:
+
+Python Developer
+
+We are looking for a Python Developer with experience in Python, FastAPI, SQL, REST APIs, Git, Docker and AWS.
+
+Responsibilities include building backend services, writing clean API code, and collaborating with the team."
+                            required
+                        ></textarea>
+                        <div class="textarea-footer">
+                            <span class="char-count" id="char-count">0 characters</span>
+                            <span class="char-minimum">Minimum 20 characters</span>
+                        </div>
+                    </div>
+                    <p class="field-error hidden" id="job-error"></p>
+
+                    <button type="button" class="btn btn-text sample-btn" id="sample-job-btn">
+                        Load sample job description
+                    </button>
+                </section>
+
+                <!-- Submit -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="analyze-btn">
+                        <span class="btn-label">Analyze Resume</span>
+                        <span class="btn-spinner hidden" id="btn-spinner" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Global status messages -->
+            <div class="alert alert-error hidden" id="global-error" role="alert"></div>
+
+            <!-- Results Dashboard -->
+            <section class="results-dashboard hidden" id="results-dashboard">
+                <!-- Overall Score -->
+                <div class="card score-card">
+                    <div class="score-circle" id="overall-score-circle">
+                        <span class="score-value" id="overall-score">0</span>
+                        <span class="score-label">Job Match Score</span>
+                    </div>
+                    <p class="score-disclaimer">This is a Job Match Score, not an official ATS score.</p>
+                    <div class="score-breakdown">
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Keyword Match</span>
+                            <div class="progress-bar"><div class="progress-fill keyword" id="keyword-bar"></div></div>
+                            <span class="breakdown-value" id="keyword-score">0%</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Semantic Similarity</span>
+                            <div class="progress-bar"><div class="progress-fill semantic" id="semantic-bar"></div></div>
+                            <span class="breakdown-value" id="semantic-score">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-row">
+                    <div class="card chart-card">
+                        <h3>Matched vs Missing Skills</h3>
+                        <canvas id="skills-chart"></canvas>
+                    </div>
+                    <div class="card chart-card">
+                        <h3>Score Breakdown</h3>
+                        <canvas id="score-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Matched & Missing -->
+                <div class="skills-row">
+                    <div class="card">
+                        <h3 class="section-title matched-title">✓ Matched Skills</h3>
+                        <ul class="skill-list matched-list" id="matched-skills"></ul>
+                        <p class="empty-msg hidden" id="no-matched">No matching skills found.</p>
+                    </div>
+                    <div class="card">
+                        <h3 class="section-title missing-title">✗ Missing Skills</h3>
+                        <ul class="skill-list missing-list" id="missing-skills"></ul>
+                        <p class="empty-msg hidden" id="no-missing">No missing skills — great match!</p>
+                    </div>
+                </div>
+
+                <!-- Skill Gap -->
+                <div class="card">
+                    <h3 class="section-title">Skill Gap Analysis</h3>
+                    <div class="gap-grid">
+                        <div class="gap-column">
+                            <h4 class="gap-high">High Priority</h4>
+                            <ul class="skill-list gap-list" id="gap-high"></ul>
+                        </div>
+                        <div class="gap-column">
+                            <h4 class="gap-medium">Medium Priority</h4>
+                            <ul class="skill-list gap-list" id="gap-medium"></ul>
+                        </div>
+                        <div class="gap-column">
+                            <h4 class="gap-low">Low Priority</h4>
+                            <ul class="skill-list gap-list" id="gap-low"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggestions -->
+                <div class="card">
+                    <h3 class="section-title">Resume Improvement Suggestions</h3>
+                    <ul class="suggestions-list" id="suggestions"></ul>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>AI Resume Analyzer & Job Matcher — Internship Portfolio Project</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/assets/script.js"></script>
+</body>
+</html>
