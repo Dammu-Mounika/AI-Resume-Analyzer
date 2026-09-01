@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-    API_ANALYZE_URL: "/analyze",
+    API_ANALYZE_URL: "http://127.0.0.1:8000/analyze", // Updated for local FastAPI development
     MIN_JOB_DESCRIPTION_LENGTH: 20,
     MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024,
     ALLOWED_EXTENSION: ".pdf",
@@ -199,12 +199,16 @@ async function submitAnalysis() {
 // --- Results dashboard ---
 
 function showResults(data) {
+    const matched = data.matched_skills || [];
+    const missing = data.missing_skills || [];
+    const gap = data.skill_gap || {};
+
     // Scores
-    document.getElementById("overall-score").textContent = `${Math.round(data.overall_score)}%`;
-    document.getElementById("keyword-score").textContent = `${data.keyword_score}%`;
-    document.getElementById("semantic-score").textContent = `${data.semantic_score}%`;
-    document.getElementById("keyword-bar").style.width = `${data.keyword_score}%`;
-    document.getElementById("semantic-bar").style.width = `${data.semantic_score}%`;
+    document.getElementById("overall-score").textContent = `${Math.round(data.overall_score || 0)}%`;
+    document.getElementById("keyword-score").textContent = `${data.keyword_score || 0}%`;
+    document.getElementById("semantic-score").textContent = `${data.semantic_score || 0}%`;
+    document.getElementById("keyword-bar").style.width = `${data.keyword_score || 0}%`;
+    document.getElementById("semantic-bar").style.width = `${data.semantic_score || 0}%`;
 
     const circle = document.getElementById("overall-score-circle");
     circle.className = "score-circle";
@@ -213,20 +217,20 @@ function showResults(data) {
     else circle.classList.add("score-low");
 
     // Skills lists
-    renderSkillList("matched-skills", data.matched_skills, "matched");
-    renderSkillList("missing-skills", data.missing_skills, "missing");
-    toggleEmpty("no-matched", data.matched_skills.length === 0);
-    toggleEmpty("no-missing", data.missing_skills.length === 0);
+    renderSkillList("matched-skills", matched, "matched");
+    renderSkillList("missing-skills", missing, "missing");
+    toggleEmpty("no-matched", matched.length === 0);
+    toggleEmpty("no-missing", missing.length === 0);
 
     // Skill gap
-    renderSkillList("gap-high", data.skill_gap.high_priority, "gap");
-    renderSkillList("gap-medium", data.skill_gap.medium_priority, "gap");
-    renderSkillList("gap-low", data.skill_gap.low_priority, "gap");
+    renderSkillList("gap-high", gap.high_priority || [], "gap");
+    renderSkillList("gap-medium", gap.medium_priority || [], "gap");
+    renderSkillList("gap-low", gap.low_priority || [], "gap");
 
     // Suggestions
     const suggestionsEl = document.getElementById("suggestions");
     suggestionsEl.innerHTML = "";
-    data.suggestions.forEach((s) => {
+    (data.suggestions || []).forEach((s) => {
         const li = document.createElement("li");
         li.textContent = s;
         suggestionsEl.appendChild(li);
@@ -241,6 +245,7 @@ function showResults(data) {
 
 function renderSkillList(elementId, skills, type) {
     const ul = document.getElementById(elementId);
+    if (!ul) return;
     ul.innerHTML = "";
     skills.forEach((skill) => {
         const li = document.createElement("li");
@@ -260,12 +265,15 @@ function renderCharts(data) {
     if (skillsChart) skillsChart.destroy();
     if (scoreChart) scoreChart.destroy();
 
+    const matchedCount = (data.matched_skills || []).length;
+    const missingCount = (data.missing_skills || []).length;
+
     skillsChart = new Chart(document.getElementById("skills-chart"), {
         type: "doughnut",
         data: {
             labels: ["Matched", "Missing"],
             datasets: [{
-                data: [data.matched_skills.length, data.missing_skills.length],
+                data: [matchedCount, missingCount],
                 backgroundColor: ["#059669", "#dc2626"],
             }],
         },
@@ -278,7 +286,7 @@ function renderCharts(data) {
             labels: ["Keyword Match", "Semantic Similarity", "Overall Score"],
             datasets: [{
                 label: "Score (%)",
-                data: [data.keyword_score, data.semantic_score, data.overall_score],
+                data: [data.keyword_score || 0, data.semantic_score || 0, data.overall_score || 0],
                 backgroundColor: ["#2563eb", "#7c3aed", "#059669"],
             }],
         },
@@ -308,7 +316,7 @@ function showGlobalError(message) {
     globalError.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
-function showElement(el) { el.classList.remove("hidden"); }
-function hideElement(el) { el.classList.add("hidden"); }
+function showElement(el) { if (el) el.classList.remove("hidden"); }
+function hideElement(el) { if (el) el.classList.add("hidden"); }
 
 updateCharCount();
