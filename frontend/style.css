@@ -398,6 +398,16 @@ textarea.input-error {
     margin-bottom: 1.25rem;
 }
 
+.chart-card {
+    position: relative;
+    width: 100%;
+}
+
+.chart-card canvas {
+    max-width: 100%;
+    max-height: 260px;
+}
+
 .chart-card h3 {
     font-size: 0.9375rem;
     font-weight: 600;
