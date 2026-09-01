@@ -4,10 +4,11 @@ Skill gap analysis and resume improvement suggestions.
 Suggestions NEVER encourage falsely claiming skills.
 """
 
+from typing import Dict, List
 from backend.keyword_extractor import count_skill_mentions
 
 
-def analyze_skill_gap(job_description: str, missing_skills: list[str]) -> dict[str, list[str]]:
+def analyze_skill_gap(job_description: str, missing_skills: List[str]) -> Dict[str, List[str]]:
     """
     Categorize missing skills by priority based on job description frequency.
 
@@ -15,9 +16,9 @@ def analyze_skill_gap(job_description: str, missing_skills: list[str]) -> dict[s
     MEDIUM: mentioned exactly once
     LOW: extracted but weak signal (fallback)
     """
-    high: list[str] = []
-    medium: list[str] = []
-    low: list[str] = []
+    high: List[str] = []
+    medium: List[str] = []
+    low: List[str] = []
 
     for skill in missing_skills:
         mentions = count_skill_mentions(job_description, skill)
@@ -86,16 +87,16 @@ def _suggestion_for_skill(skill: str) -> str:
 
 
 def generate_suggestions(
-    missing_skills: list[str],
+    missing_skills: List[str],
     keyword_score: float,
-    skill_gap: dict[str, list[str]],
-) -> list[str]:
+    skill_gap: Dict[str, List[str]],
+) -> List[str]:
     """
     Generate actionable resume improvement suggestions.
 
     Prioritizes high-priority gaps first. Never recommends adding fake skills.
     """
-    suggestions: list[str] = []
+    suggestions: List[str] = []
 
     priority_order = (
         skill_gap.get("high_priority", [])
