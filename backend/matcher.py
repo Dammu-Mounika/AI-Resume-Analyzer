@@ -3,6 +3,7 @@ Resume vs job description skill matching engine.
 """
 
 from dataclasses import dataclass, field
+from typing import Any, Dict
 
 from backend.keyword_extractor import ExtractedSkills
 
@@ -20,7 +21,7 @@ class MatchResult:
     resume_skills_flat: list[str] = field(default_factory=list)
     job_skills_flat: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "matched_skills": self.matched_skills,
             "missing_skills": self.missing_skills,
