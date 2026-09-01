@@ -46,22 +46,26 @@ def _build_skill_patterns() -> list[tuple[str, str, str]]:
     Longer patterns are checked first to avoid partial matches (e.g. Java vs JavaScript).
     """
     patterns: list[tuple[str, str, str]] = []
-    seen: set[str] = set()
+    seen_patterns: set[str] = set()
 
+    # Base skills from category mapping
     for category, skills in SKILLS_BY_CATEGORY.items():
         for skill in skills:
-            canonical = normalize_skill(skill)
-            key = canonical.lower()
-            if key not in seen:
-                patterns.append((skill.lower(), canonical, category))
-                seen.add(key)
+            pattern_text = skill.lower()
+            if pattern_text not in seen_patterns:
+                canonical = normalize_skill(skill)
+                patterns.append((pattern_text, canonical, category))
+                seen_patterns.add(pattern_text)
 
+    # Alias mappings
     for alias, canonical in SKILL_ALIASES.items():
-        key = canonical.lower()
-        category = _find_category(canonical)
-        patterns.append((alias.lower(), canonical, category))
-        seen.add(key)
+        pattern_text = alias.lower()
+        if pattern_text not in seen_patterns:
+            category = _find_category(canonical)
+            patterns.append((pattern_text, canonical, category))
+            seen_patterns.add(pattern_text)
 
+    # Sort longest pattern text first to prevent substring false positives
     patterns.sort(key=lambda item: len(item[0]), reverse=True)
     return patterns
 
@@ -111,7 +115,7 @@ def extract_skills(text: str) -> ExtractedSkills:
         return ExtractedSkills()
 
     normalized = normalize_text(text)
-    found: dict[str, str] = {}  # canonical_lower -> (canonical, category)
+    found: dict[str, tuple[str, str]] = {}  # canonical_lower -> (canonical, category)
 
     for pattern_text, canonical, category in SKILL_PATTERNS:
         regex = _word_boundary_pattern(pattern_text)
@@ -122,7 +126,8 @@ def extract_skills(text: str) -> ExtractedSkills:
 
     result = ExtractedSkills()
     for canonical, category in found.values():
-        getattr(result, category).append(canonical)
+        target_list = getattr(result, category, result.other)
+        target_list.append(canonical)
 
     for category in result.to_dict():
         getattr(result, category).sort()
