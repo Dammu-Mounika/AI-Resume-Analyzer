@@ -1,5 +1,5 @@
 """
-Unit tests for the AI Resume Analyzer.
+Unit and integration tests for the AI Resume Analyzer application.
 """
 
 import io
@@ -16,7 +16,6 @@ from backend.resume_parser import (
     InvalidPDFError,
     clean_text,
     extract_text_from_pdf,
-    parse_resume_upload,
 )
 from backend.scorer import calculate_overall_score, calculate_semantic_similarity
 from backend.suggestions import analyze_skill_gap, generate_suggestions
@@ -25,6 +24,7 @@ client = TestClient(app)
 
 
 def _make_pdf_with_text(pages_text: list[str]) -> bytes:
+    """Helper to construct in-memory PDF bytes with text."""
     doc = pymupdf.open()
     for text in pages_text:
         page = doc.new_page()
@@ -35,6 +35,7 @@ def _make_pdf_with_text(pages_text: list[str]) -> bytes:
 
 
 def _make_empty_pdf() -> bytes:
+    """Helper to construct an empty PDF byte stream."""
     doc = pymupdf.open()
     doc.new_page()
     pdf_bytes = doc.tobytes()
@@ -132,8 +133,8 @@ class TestScoring:
     def test_overall_score_formula(self):
         result = calculate_overall_score(80, 65)
         assert result.overall_score == 75.5
-        assert result.keyword_score == 80
-        assert result.semantic_score == 65
+        assert result.keyword_score == 80.0
+        assert result.semantic_score == 65.0
 
 
 class TestSuggestions:
@@ -142,7 +143,11 @@ class TestSuggestions:
         assert "AWS" in gap["high_priority"] or "AWS" in gap["medium_priority"]
 
     def test_suggestions_are_ethical(self):
-        suggestions = generate_suggestions(["Docker", "AWS"], 40, {"high_priority": ["AWS"], "medium_priority": ["Docker"], "low_priority": []})
+        suggestions = generate_suggestions(
+            ["Docker", "AWS"],
+            40,
+            {"high_priority": ["AWS"], "medium_priority": ["Docker"], "low_priority": []},
+        )
         assert any("genuinely" in s.lower() or "if you" in s.lower() for s in suggestions)
         assert not any("add fake" in s.lower() for s in suggestions)
 
