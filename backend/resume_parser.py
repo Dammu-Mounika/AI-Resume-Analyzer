@@ -77,7 +77,7 @@ def clean_text(raw_text: str) -> str:
     if not raw_text:
         return ""
 
-    # Replace non-breaking spaces and similar
+    # Replace non-breaking spaces
     text = raw_text.replace("\xa0", " ")
 
     # Collapse multiple spaces/tabs on the same line
@@ -99,8 +99,6 @@ def extract_text_from_pdf(file_bytes: bytes) -> ParsedResume:
 
     Supports multi-page resumes. Raises clear errors for invalid or empty PDFs.
     """
-    validate_pdf_upload(filename=None, content_type=None, file_bytes=file_bytes)
-
     doc = None
     try:
         doc = pymupdf.open(stream=file_bytes, filetype="pdf")
