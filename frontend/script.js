@@ -3,7 +3,7 @@
  */
 
 const CONFIG = {
-    API_ANALYZE_URL: "http://127.0.0.1:8000/analyze", // Updated for local FastAPI development
+    API_ANALYZE_URL: "http://127.0.0.1:8001/analyze", // Updated to match active backend port 8001
     MIN_JOB_DESCRIPTION_LENGTH: 20,
     MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024,
     ALLOWED_EXTENSION: ".pdf",
@@ -190,7 +190,7 @@ async function submitAnalysis() {
 
         showResults(data);
     } catch {
-        showGlobalError("Could not connect to the server. Make sure the backend is running at http://127.0.0.1:8000");
+        showGlobalError("Could not connect to the server. Make sure the backend is running at http://127.0.0.1:8001");
     } finally {
         setLoading(false);
     }
