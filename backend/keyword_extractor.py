@@ -45,6 +45,7 @@ def normalize_skill(skill: str) -> str:
     cleaned = skill.strip()
     alias_key = cleaned.lower()
     return SKILL_ALIASES.get(alias_key, cleaned)
+<<<<<<< HEAD
 
 
 def _find_category(canonical: str) -> str:
@@ -84,6 +85,43 @@ def _build_skill_patterns() -> list[tuple[str, str, str]]:
     return patterns
 
 
+=======
+
+
+def _find_category(canonical: str) -> str:
+    for category, skills in SKILLS_BY_CATEGORY.items():
+        if canonical in skills or canonical.lower() in [s.lower() for s in skills]:
+            return category
+    return "other"
+
+
+def _build_skill_patterns() -> list[tuple[str, str, str]]:
+    """
+    Build searchable patterns: (pattern_text, canonical_name, category).
+    Longer patterns are checked first to avoid partial matches (e.g. Java vs JavaScript).
+    """
+    patterns: list[tuple[str, str, str]] = []
+    seen: set[str] = set()
+
+    for category, skills in SKILLS_BY_CATEGORY.items():
+        for skill in skills:
+            canonical = normalize_skill(skill)
+            key = canonical.lower()
+            if key not in seen:
+                patterns.append((skill.lower(), canonical, category))
+                seen.add(key)
+
+    for alias, canonical in SKILL_ALIASES.items():
+        key = canonical.lower()
+        category = _find_category(canonical)
+        patterns.append((alias.lower(), canonical, category))
+        seen.add(key)
+
+    patterns.sort(key=lambda item: len(item[0]), reverse=True)
+    return patterns
+
+
+>>>>>>> 17f2cf1 (Your commit message here)
 # Build searchable patterns after defining helper functions
 SKILL_PATTERNS = _build_skill_patterns()
 
