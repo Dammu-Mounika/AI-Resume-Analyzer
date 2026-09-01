@@ -8,7 +8,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from backend.config import BASE_DIR, MAX_UPLOAD_SIZE_BYTES
+from backend.config import ALLOWED_ORIGINS, BASE_DIR, MAX_UPLOAD_SIZE_BYTES
+from backend.database import save_analysis
 from backend.keyword_extractor import extract_skills
 from backend.matcher import compare_skills
 from backend.resume_parser import (
@@ -31,7 +32,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Or use ALLOWED_ORIGINS from config.py
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,8 +77,9 @@ class AnalyzeResponse(BaseModel):
 def root(request: Request):
     """Browser visits receive the web UI; API clients receive JSON health check."""
     accept = request.headers.get("accept", "")
-    if "text/html" in accept:
-        return FileResponse(FRONTEND_DIR / "index.html")
+    index_file = FRONTEND_DIR / "index.html"
+    if "text/html" in accept and index_file.exists():
+        return FileResponse(index_file)
     return {
         "message": "AI Resume Analyzer & Job Matcher API",
         "status": "running",
@@ -150,6 +152,20 @@ async def analyze_resume(
         skill_gap,
     )
 
+    # Optional: Log analysis execution to SQLite database
+    try:
+        save_analysis(
+            filename=resume.filename,
+            job_title=None,
+            overall_score=scores.overall_score,
+            keyword_score=scores.keyword_score,
+            semantic_score=scores.semantic_score,
+            matched_skills=match.matched_skills,
+            missing_skills=match.missing_skills,
+        )
+    except Exception:
+        pass  # Non-blocking if database write fails
+
     return AnalyzeResponse(
         overall_score=scores.overall_score,
         keyword_score=scores.keyword_score,
@@ -167,4 +183,5 @@ async def analyze_resume(
     )
 
 
-app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR)), name="assets")
+if FRONTEND_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIR)), name="assets")
